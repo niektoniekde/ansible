@@ -1,0 +1,5 @@
+---
+os_etc_files:
+  - "tmux.conf"
+  - "bash.bashrc.local"
+# vars file for opensuse_microos_fancy_server

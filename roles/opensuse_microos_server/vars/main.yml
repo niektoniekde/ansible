@@ -1,0 +1,25 @@
+---
+# vars file for opensuse_microos_server
+tu_options:
+  - "--continue"
+  - "--non-interactive"
+  - "--drop-if-no-change"
+base_package_list: 
+  - "tmux"
+  - "netcat-openbsd"
+  - "tcpdump"
+  - "neovim"
+  - "firewalld"
+  - "firewalld-bash-completion"
+  - "python3-policycoreutils"
+  - "policycoreutils-python-utils"
+  - "socat"
+  - "nfs-client"
+  - "ethtool"
+  - "parted"
+  - "htop"
+  - "sysstat"
+  - "lsscsi"
+  - "iftop"
+  - "jq"
+  - "dnsmasq"

@@ -1,0 +1,10 @@
+---
+# vars file for opensuse_microos_iscsi_target_server
+tu_options:
+  - "--continue"
+  - "--non-interactive"
+  - "--drop-if-no-change"
+base_package_list: 
+  - "lvm2"
+  - "lvm2-lockd"
+  - "python310-targetcli-fb"

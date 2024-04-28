@@ -1,0 +1,28 @@
+---
+# tasks file for opensuse_microos_fancy_server
+- name: "tasks block"
+  #tags:
+  become: true
+  block:
+    - name: "file: create local configuration directory"
+      file:
+        path: "/usr/local/etc"
+        state: directory
+        owner: root
+        group: root
+        mode: "u=rwX,go=rX"
+
+    - name: "copy: copy configuration files to /usr/local/etc" 
+      copy:
+        src: "files/{{ item }}"
+        dest: "/usr/local/etc/{{ item }}"
+      with_items: 
+        - "{{ os_etc_files }}"
+
+    - name: "file: make symlinks from local configuration to system etc" 
+      file:
+        src: "/usr/local/etc/{{ item }}"
+        dest: "/etc/{{ item }}"
+        state: link
+      with_items: 
+        - "{{ os_etc_files }}"
