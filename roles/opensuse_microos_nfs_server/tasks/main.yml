@@ -1,18 +1,13 @@
 ---
-# tasks file for opensuse_microos_qemu_vd
+# tasks file for opensuse_microos_nfs_server
 - name: "tasks block"
-  #tags:
+  tags:
+    - nfs_server
   become: true
   block:
     - name: "set_fact"
       set_fact:
         reboot_timeout: 180
-
-    - name: "shell: TU dup"
-      shell:
-        executable: /bin/bash
-        cmd: |
-          transactional-update {{ tu_options | join(' ') }} dup
 
     - name: "shell: TU pkg install - base package list"
       shell:
@@ -31,4 +26,12 @@
         reboot_timeout: "{{ reboot_timeout }}"
         reboot_command: "systemd-run --on-active=3 --timer-property=AccuracySec=100ms /usr/bin/systemctl reboot"
 
+    - name: "systemd_service: enable nfs-server"
+      tags:
+        - nfs_server_enable_service
+      systemd_service:
+        name: nfs-server
+        enabled: true
+        state: started
+ 
   when: "ansible_distribution == 'openSUSE MicroOS'"

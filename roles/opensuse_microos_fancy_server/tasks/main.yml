@@ -1,7 +1,8 @@
 ---
 # tasks file for opensuse_microos_fancy_server
 - name: "tasks block"
-  #tags:
+  tags:
+    - fancy_server
   become: true
   block:
     - name: "file: create local configuration directory"
@@ -26,3 +27,5 @@
         state: link
       with_items: 
         - "{{ os_etc_files }}"
+
+  when: "ansible_distribution == 'openSUSE MicroOS'"

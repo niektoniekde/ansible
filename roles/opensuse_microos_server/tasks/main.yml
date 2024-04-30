@@ -17,18 +17,18 @@
     - name: "shell: TU pkg install - base package list"
       shell:
         executable: /bin/bash
-        cmd: >
-           transactional-update {{ tu_options | join(' ') }} pkg install {{ base_package_list | join(' ') }}
+        cmd: |
+          transactional-update {{ tu_options | join(' ') }} pkg install {{ base_package_list | join(' ') }}
 
     - name: "shell: TU reboot - set new snapshot for boot"
       shell:
         executable: /bin/bash
-        cmd: >
-           transactional-update --non-interactive reboot
+        cmd: | 
+          transactional-update --non-interactive reboot
 
     - name: "reboot: system reboot to new snapshot"
       reboot:
         reboot_timeout: "{{ reboot_timeout }}"
         reboot_command: "systemd-run --on-active=3 --timer-property=AccuracySec=100ms /usr/bin/systemctl reboot"
 
-
+  when: "ansible_distribution == 'openSUSE MicroOS'"

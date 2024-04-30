@@ -1,0 +1,12 @@
+---
+# vars file for opensuse_microos_nfs_server
+tu_options:
+  - "--continue"
+  - "--non-interactive"
+  - "--drop-if-no-change"
+base_package_list: 
+  - "lvm2"
+  - "lvm2-lockd"
+  - "nfs-kernel-server"
+  - "nfs4-acl-tools"
+  - "nfswatch"
