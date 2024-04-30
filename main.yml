@@ -6,16 +6,14 @@
 #    when: "ansible_distribution == 'openSUSE MicroOS'"
 
 - hosts: qemu_vd
-  tasks:
-  - name: "include_role: opensuse_microos_qemu_vd"
-    include_role:
-      name: opensuse_microos_qemu_vd
-    when: "ansible_distribution == 'openSUSE MicroOS'"
+  roles:
+    - opensuse_microos_qemu_vd
 
 - hosts: iscsi_target
-  tasks:
-  - name: "include_role: opensuse_microos_iscsi_target_server"
-    include_role:
-      name: opensuse_microos_iscsi_target_server
-    when: "ansible_distribution == 'openSUSE MicroOS'"
+  roles:
+    - opensuse_microos_iscsi_target_server
+
+- hosts: nfs_server
+  roles:
+    - opensuse_microos_nfs_server
 
