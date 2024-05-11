@@ -17,3 +17,8 @@
   roles:
     - opensuse_microos_nfs_server
 
+- hosts: podman_server
+  roles:
+    - opensuse_microos_podman_server
+    - podman_container_host
+
