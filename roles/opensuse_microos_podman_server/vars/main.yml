@@ -1,0 +1,11 @@
+---
+# vars file for opensuse_microos_podman_server
+tu_options:
+  - "--continue"
+  - "--non-interactive"
+  - "--drop-if-no-change"
+base_package_list: 
+  - "podman"
+  - "cockpit-podman"
+  - "firewalld"
+  - "firewalld-bash-completion"
