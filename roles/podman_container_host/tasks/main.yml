@@ -1,0 +1,263 @@
+---
+# tasks file for podman_container_host
+- name: "tasks block"
+  tags:
+    - podman_container_deploy
+  become: true
+  block:
+    - name: "set_fact"
+      set_fact:
+        reboot_timeout: 180
+ 
+    - name: "set_fact: pods volspec template"
+      tags: 
+        - podman_container_debug
+      set_fact: 
+        pod__volspec_tmpl: >
+          {
+          {% for pod in pods %}
+          '{{ pod.name }}': [
+          {% for volume in pod.volumes -%}
+          '{{ pod.hostvolpath }}/{{ pod.name }}{{ volume.mountpoint }}:{{ volume.mountpoint }}:{{ volume.options }}'
+          {%- if loop.index != (pod.volumes|length) %}, {% endif -%}
+          {%- endfor %}
+          ] 
+          {%- if loop.index != (pods|length) %}, {% endif -%}
+          {% endfor %}
+          }
+
+    - name: "set_fact: containers volspec template"
+      tags: 
+        - podman_container_debug
+      set_fact: 
+        container__volspec_tmpl: >
+          {
+          {% for container in containers %}
+          '{{ container.name }}': [
+          {% for volume in container.volumes -%}
+          '{{ container.hostvolpath }}/{{ container.name }}{{ volume.mountpoint }}:{{ volume.mountpoint }}:{{ volume.options }}'
+          {%- if loop.index != (container.volumes|length) %}, {% endif -%}
+          {%- endfor %}
+          ] 
+          {%- if loop.index != (containers|length) %}, {% endif -%}
+          {% endfor %}
+          }
+
+    - name: "set_fact: containers volspec dictionary"
+      tags: 
+        - podman_container_debug
+      set_fact:
+        container__volspec_dict: "{{ container__volspec_tmpl | from_yaml }}"
+
+    - name: "set_fact: pods volspec dictionary"
+      tags: 
+        - podman_container_debug
+      set_fact:
+        pod__volspec_dict: "{{ pod__volspec_tmpl | from_yaml }}"
+
+    - name: "debug: get container__volspec_tmpl"
+      tags: 
+        - podman_container_debug
+      debug:
+        msg: "{{ container__volspec_tmpl }}"
+
+    - name: "debug: get pod__volspec_tmpl"
+      tags: 
+        - podman_container_debug
+      debug:
+        msg: "{{ pod__volspec_tmpl }}"
+
+    - name: "debug: get volspec for every pod"
+      tags: 
+        - podman_container_debug
+      debug:
+        msg: "{{ pod__volspec_dict[item.name] }}"
+      loop: "{{ pods }}"
+
+    - name: "debug: get volspec for every container"
+      tags: 
+        - podman_container_debug
+      debug:
+        msg: "{{ container__volspec_dict[item.name] }}"
+      loop: "{{ containers }}"
+
+    - name: "debug: directory structure - pods"
+      tags: 
+        - podman_container_debug
+      debug:
+        msg: "path: {{ item[0].hostvolpath }}/{{ item[0].name }}{{ item[1].mountpoint }}, mode: {{ item[1].mode }}, owner: {{ item[1].owner }}, group: {{ item[1].group }}"
+      loop: "{{ q('subelements', pods, 'volumes', {'skip_missing': false}) }}"
+
+    - name: "debug: directory structure - containers"
+      tags: 
+        - podman_container_debug
+      debug:
+        msg: "path: {{ item[0].hostvolpath }}/{{ item[0].name }}{{ item[1].mountpoint }}, mode: {{ item[1].mode }}, owner: {{ item[1].owner }}, group: {{ item[1].group }}"
+      loop: "{{ q('subelements', containers, 'volumes', {'skip_missing': false}) }}"
+
+    - name: "debug: configuration from template for pods"
+      tags: 
+        - podman_container_debug
+      debug:
+        msg: "path: {{ item[0].hostvolpath }}/{{ item[0].name }}{{ item[1].path }}, filename: {{ item[1].filename }}, template: {{ item[1].template }}, mode: {{ item[1].mode }}, owner: {{ item[1].owner }}, group: {{ item[1].group }}"
+      loop: "{{ q('subelements', pods, 'templates', {'skip_missing': false}) }}"
+
+    - name: "debug: configuration from template for containers"
+      tags: 
+        - podman_container_debug
+      debug:
+        msg: "path: {{ item[0].hostvolpath }}/{{ item[0].name }}{{ item[1].path }}, filename: {{ item[1].filename }}, template: {{ item[1].template }}, mode: {{ item[1].mode }}, owner: {{ item[1].owner }}, group: {{ item[1].group }}"
+      loop: "{{ q('subelements', containers, 'templates', {'skip_missing': false}) }}"
+
+    - name: "file: deploy directory structure - pods"
+      file:
+        path: "{{ item[0].hostvolpath }}/{{ item[0].name }}{{ item[1].mountpoint }}"
+        owner: "{{ item[1].owner }}"
+        group: "{{ item[1].group }}"
+        mode: "{{ item[1].mode }}"
+        setype: _default
+        state: directory
+      loop: "{{ q('subelements', pods, 'volumes', {'skip_missing': false}) }}"
+
+    - name: "file: deploy directory structure - containers"
+      file:
+        path: "{{ item[0].hostvolpath }}/{{ item[0].name }}{{ item[1].mountpoint }}"
+        owner: "{{ item[1].owner }}"
+        group: "{{ item[1].group }}"
+        mode: "{{ item[1].mode }}"
+        setype: _default
+        state: directory
+      loop: "{{ q('subelements', containers, 'volumes', {'skip_missing': false}) }}"
+
+    - name: "template: deploy configuration from template - pods"
+      template:
+        src: "templates/{{ item[1].template }}"
+        dest: "{{ item[0].hostvolpath }}/{{ item[0].name }}{{ item[1].path }}/{{ item[1].filename}}"
+        owner: "{{ item[1].owner }}"
+        group: "{{ item[1].group }}"
+        mode:  "{{ item[1].mode }}"
+        setype: _default
+      loop: "{{ q('subelements', pods, 'templates', {'skip_missing': false}) }}"
+
+    - name: "template: deploy configuration from template - containers"
+      template:
+        src: "templates/{{ item[1].template }}"
+        dest: "{{ item[0].hostvolpath }}/{{ item[0].name }}{{ item[1].path }}/{{ item[1].filename}}"
+        owner: "{{ item[1].owner }}"
+        group: "{{ item[1].group }}"
+        mode:  "{{ item[1].mode }}"
+        setype: _default
+      loop: "{{ q('subelements', containers, 'templates', {'skip_missing': false}) }}"
+
+    - name: "podman_pod: cleanup pods"
+      containers.podman.podman_pod:
+        name: "{{ item.name }}"
+        state: "absent"
+      loop: "{{ pods }}"
+
+    - name: "podman_container: cleanup containers"
+      containers.podman.podman_container:
+        name: "{{ item.name }}"
+        state: "absent"
+      loop: "{{ containers }}"
+   
+    - name: "file: cleanup systemd services - pods"
+      file:
+        path: "{{ item['sysd_svc_attr'].dest  }}/container-{{ item.name }}.service"
+        state: "absent"
+      loop: "{{ pods }}"
+
+    - name: "file: cleanup systemd services - containers"
+      file:
+        path: "{{ item['sysd_svc_attr'].dest  }}/container-{{ item.name }}.service"
+        state: "absent"
+      loop: "{{ containers }}"
+
+    - name: "systemd: daemon-reload"
+      systemd:
+        daemon_reload: "yes"
+
+    - name: "podman_pod: deploy pods"
+      containers.podman.podman_pod:
+        name: "{{ item.name }}"
+        infra: "{{ item.infra }}"
+        infra_image: "{{ item.infra_image }}"
+        infra_name: "infra-{{ item.name }}"
+        state: "{{ item.state }}"
+        volume: "{{ pod__volspec_dict[item.name] }}"
+        ports: '{{ item.ports }}'  
+        recreate:  "{{ item.recreate }}"
+      loop: "{{ pods }}"
+
+    - name: "podman_container: deploy containers (within pod) "
+      containers.podman.podman_container:
+        name: "{{ item.name }}"
+        pod: "{{ item.pod }}"
+        image: "{{ item.image }}"
+        state: "{{ item.state }}"
+        volume: "{{ container__volspec_dict[item.name] }}"
+        ports: '{{ item.ports }}'  
+        recreate:  "{{ item.recreate }}"
+        env: "{{ item.env_vars }}"
+      loop: "{{ containers }}"
+      when: item.pod|string != 'None'
+
+    - name: "podman_container: deploy containers (without pod)"
+      containers.podman.podman_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: "{{ item.state }}"
+        volume: "{{ container__volspec_dict[item.name] }}"
+        ports: '{{ item.ports }}'  
+        recreate:  "{{ item.recreate }}"
+        env: "{{ item.env_vars }}"
+      loop: "{{ containers }}"
+      when: item.pod|string == 'None'
+
+    - name: "podman_generate_systemd: deploy systemd services - containers"
+      containers.podman.podman_generate_systemd:
+        name: "{{ item.name }}"
+        container_prefix: "container"
+        pod_prefix: "pod"
+        new: "{{ item['sysd_svc_attr'].new }}"
+        restart_policy: "{{ item['sysd_svc_attr'].restart_policy }}"
+        use_names: "{{ item['sysd_svc_attr'].use_names }}"
+        dest: "{{ item['sysd_svc_attr'].dest }}"
+      loop: "{{ containers }}"
+
+    - name: "systemd: daemon-reload"
+      systemd:
+        daemon_reload: "yes"
+
+    - name: "podman_generate_systemd: deploy systemd services - pods"
+      containers.podman.podman_generate_systemd:
+        name: "{{ item.name }}"
+        container_prefix: "container"
+        pod_prefix: "pod"
+        new: "{{ item['sysd_svc_attr'].new }}"
+        restart_policy: "{{ item['sysd_svc_attr'].restart_policy }}"
+        use_names: "{{ item['sysd_svc_attr'].use_names }}"
+        dest: "{{ item['sysd_svc_attr'].dest }}"
+      loop: "{{ pods }}"
+
+    - name: "systemd: daemon-reload"
+      systemd:
+        daemon_reload: "yes"
+
+    - name: "systemd: enable and start related services - pods"
+      systemd:
+        name: "pod-{{ item.name }}"
+        enabled: "{{ item['sysd_svc_state'].enabled }}"
+        daemon_reload: "{{ item['sysd_svc_state'].daemon_reload }}"
+        state: "{{ item['sysd_svc_state'].state }}"
+      loop: "{{ pods }}"
+
+    - name: "systemd: enable and start related services - containers"
+      systemd:
+        name: "container-{{ item.name }}"
+        enabled: "{{ item['sysd_svc_state'].enabled }}"
+        daemon_reload: "{{ item['sysd_svc_state'].daemon_reload }}"
+        state: "{{ item['sysd_svc_state'].state }}"
+      loop: "{{ containers }}"
+
+  when: "( containers is defined ) and ( containers|length > 0 )"
