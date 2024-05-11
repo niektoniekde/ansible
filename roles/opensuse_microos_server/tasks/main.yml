@@ -1,7 +1,7 @@
 ---
 # tasks file for opensuse_microos_server
 - name: "tasks block"
-  #tags:
+  tags: "basic_server" 
   become: true
   block:
     - name: "set_fact"
